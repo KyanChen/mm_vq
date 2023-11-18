@@ -17,8 +17,8 @@ class SemanticVQVAEDataset(BaseSegDataset):
         super().__init__(
             img_suffix=img_suffix, seg_map_suffix=seg_map_suffix, **kwargs)
 
-
     def prepare_data(self, idx) -> Any:
         data_info = self.get_data_info(idx)
         results = self.pipeline(data_info)
+        results['inputs'] = results['data_samples'].gt_sem_seg.data
         return results

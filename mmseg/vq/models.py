@@ -143,22 +143,34 @@ class VQVAEModel(BaseModule):
     def __init__(
         self,
         quantizer,
-        in_channels: int = 3,
-        out_channels: int = 3,
+        num_classes: int = 7,
+        ignore_index: int = 255,
         down_block_types: Tuple[str] = ("DownEncoderBlock2D",),
         up_block_types: Tuple[str] = ("UpDecoderBlock2D",),
         block_out_channels: Tuple[int] = (64,),
         layers_per_block: int = 1,
         act_fn: str = "silu",
-        latent_channels: int = 3,
+        latent_channels: int = 256,
         norm_num_groups: int = 32,
         vq_embed_dim: Optional[int] = None,
         norm_type: str = "group",  # group, spatial
         init_cfg=None,
     ):
         super().__init__(init_cfg=init_cfg)
+
+        self.num_classes = num_classes
+        self.ignore_index = ignore_index
+
+        self.embedding = nn.Embedding(num_classes, latent_channels)
+        self.down_conv = nn.Sequential(
+            nn.Conv2d(latent_channels, latent_channels, 5, stride=2, padding=3),
+            nn.SiLU(),
+            nn.Conv2d(latent_channels, latent_channels, 3, padding=1),
+            nn.SiLU(),
+        )
+
         self.encoder = Encoder(
-            in_channels=in_channels,
+            in_channels=latent_channels,
             out_channels=latent_channels,
             down_block_types=down_block_types,
             block_out_channels=block_out_channels,
@@ -176,7 +188,7 @@ class VQVAEModel(BaseModule):
         # pass init params to Decoder
         self.decoder = Decoder(
             in_channels=latent_channels,
-            out_channels=out_channels,
+            out_channels=num_classes,
             up_block_types=up_block_types,
             block_out_channels=block_out_channels,
             layers_per_block=layers_per_block,
@@ -186,6 +198,17 @@ class VQVAEModel(BaseModule):
         )
 
     def encode(self, x):
+        # squeeze to reduce the channel dimension
+        x = x.squeeze(1).long()
+        # go through embedding layer except for ignore_index
+        ignore_mask = x == self.ignore_index
+        x[ignore_mask] = 0
+        x = self.embedding(x)
+        x[ignore_mask] = 0
+        # reshape to (batch, channel, height, width)
+        x = einops.rearrange(x, 'b h w c -> b c h w')
+        x = self.down_conv(x)
+
         h = self.encoder(x)
         h = self.quant_conv(h)
         return h
@@ -326,6 +349,7 @@ class VQVAEEncoderDecoder(EncoderDecoder):
         return data_samples
 
 
+@MODELS.register_module()
 class PseudoDecodeHead(BaseModule):
     def __init__(self,
                  threshold=0.5,

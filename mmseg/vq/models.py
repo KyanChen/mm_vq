@@ -114,7 +114,8 @@ class VectorQuantizer(BaseModule):
 
         # compute loss for embedding
         if not self.legacy:
-            loss = self.beta * torch.mean((z_q.detach() - z) ** 2) + torch.mean((z_q - z.detach()) ** 2)
+            # loss = self.beta * torch.mean((z_q.detach() - z) ** 2) + torch.mean((z_q - z.detach()) ** 2)
+            loss = self.beta * F.mse_loss(z, z_q.detach())
         else:
             loss = torch.mean((z_q.detach() - z) ** 2) + self.beta * torch.mean((z_q - z.detach()) ** 2)
 

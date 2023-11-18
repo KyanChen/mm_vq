@@ -1,4 +1,4 @@
-custom_imports = dict(imports=['mmseg.vq'], allow_failed_imports=False)
+# custom_imports = dict(imports=['mmseg.vq'], allow_failed_imports=False)
 
 default_scope = 'mmseg'
 env_cfg = dict(
@@ -8,18 +8,18 @@ env_cfg = dict(
 )
 default_hooks = dict(
     timer=dict(type='IterTimerHook'),
-    logger=dict(type='LoggerHook', interval=50, log_metric_by_epoch=True),
+    logger=dict(type='LoggerHook', interval=10, log_metric_by_epoch=True),
     param_scheduler=dict(type='ParamSchedulerHook'),
     checkpoint=dict(type='CheckpointHook', interval=1, by_epoch=True, save_last=True),
     sampler_seed=dict(type='DistSamplerSeedHook'),
-    visualization=dict(type='SegVisualizationHook')
+    visualization=dict(type='SegVisualizationHook', draw=True, interval=20),
 )
 
 work_dir = './work_dirs/mapgpt/vqvae'
 
 vis_backends = [
-    dict(type='LocalVisBackend'),
-    # dict(type='WandbVisBackend', init_kwargs=dict(project='mapgpt', group='vqvae', name='vqvae'))
+    dict(type='LocalVisBackend', save_dir=work_dir),
+    dict(type='WandbVisBackend', init_kwargs=dict(project='mapgpt', group='vqvae', name='vqvae'))
 ]
 visualizer = dict(
     type='SegLocalVisualizer', vis_backends=vis_backends, name='visualizer')
@@ -76,7 +76,7 @@ model = dict(
 
 
 dataset_type = 'SemanticVQVAEDataset'
-data_root = '/Users/kyanchen/datasets/mapgpt/seg'
+data_root = r'E:\mapgpt'
 
 train_pipeline = [
     dict(type='LoadImageFromFile', color_type='unchanged'),
@@ -101,9 +101,10 @@ test_pipeline = [
     dict(type='PackSegInputs')
 ]
 
-batch_size_per_gpu = 2
-num_workers = 0
-persistent_workers = False
+batch_size_per_gpu = 4
+num_workers = 8
+persistent_workers = True
+# indices = list(range(0, 8))
 indices = None
 
 train_dataloader = dict(
@@ -114,7 +115,7 @@ train_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=dict(
         type=dataset_type,
-        data_root=data_root,
+        data_root=data_root+'/train',
         reduce_zero_label=True,
         indices=indices,
         img_suffix='.png',
@@ -132,7 +133,7 @@ val_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
         type=dataset_type,
-        data_root=data_root,
+        data_root=data_root+'/val',
         reduce_zero_label=True,
         indices=indices,
         img_suffix='.png',
@@ -155,7 +156,7 @@ optim_wrapper = dict(
         type='AdamW', lr=base_lr, betas=(0.9, 0.999), weight_decay=0.01),
 )
 
-max_epochs = 300
+max_epochs = 400
 param_scheduler = [
     dict(
         type='LinearLR', start_factor=1e-6, by_epoch=False, begin=0, end=100),
@@ -171,7 +172,7 @@ param_scheduler = [
 
 
 train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=2)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 

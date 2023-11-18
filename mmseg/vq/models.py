@@ -55,8 +55,8 @@ class VectorQuantizer(BaseModule):
     def init_codebook(self, z_flattened):
         out = self._tile(z_flattened)
         self.embedding.weight.data = out[:self.n_e]
-        self.code_sum = self.embedding.clone()
-        self.code_count = torch.ones(self.n_e, device=self.embedding.device)
+        self.code_sum = self.embedding.weight.data.clone()
+        self.code_count = torch.ones(self.n_e, device=self.embedding.weight.device)
         self.init = True
 
     @torch.no_grad()
@@ -96,8 +96,8 @@ class VectorQuantizer(BaseModule):
 
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
-        z = z.permute(0, 2, 3, 1).contiguous()
-        z_flattened = einops.rearrange(z, 'b h w c -> (b h w) c')
+        bs, c, h, w = z.shape
+        z_flattened = einops.rearrange(z, 'b c h w -> (b h w) c')
         assert z_flattened.shape[-1] == self.vq_embed_dim
 
         if self.training and self.with_codebook_reset and not self.init:
@@ -105,7 +105,7 @@ class VectorQuantizer(BaseModule):
 
         min_encoding_indices, z_q = self.quantize(z_flattened)
         # reshape back to match original input shape
-        z_q = z_q.permute(0, 3, 1, 2).contiguous()
+        z_q = einops.rearrange(z_q, '(b h w) c -> b c h w', b=bs, h=h, w=w)
 
         if self.training and self.with_codebook_reset:
             perplexity = self.update_codebook(z_flattened, min_encoding_indices)
@@ -163,7 +163,7 @@ class VQVAEModel(BaseModule):
 
         self.embedding = nn.Embedding(num_classes, latent_channels)
         self.down_conv = nn.Sequential(
-            nn.Conv2d(latent_channels, latent_channels, 5, stride=2, padding=3),
+            nn.Conv2d(latent_channels, latent_channels, 5, stride=2, padding=2),
             nn.SiLU(),
             nn.Conv2d(latent_channels, latent_channels, 3, padding=1),
             nn.SiLU(),
@@ -241,13 +241,14 @@ class VQVAEEncoderDecoder(EncoderDecoder):
     def _init_decode_head(self, decode_head: ConfigType) -> None:
         """Initialize ``decode_head``"""
         self.decode_head = MODELS.build(decode_head)
+        self.align_corners = self.decode_head.align_corners
 
     def loss(self, inputs: Tensor, data_samples: SampleList) -> dict:
         # dict(sample=dec, commit_loss=loss, perplexity=perplexity, min_encoding_indices=min_encoding_indices)
         return_dict = self.backbone(inputs)
         losses = dict(commit_loss=return_dict['commit_loss'], perplexity=return_dict['perplexity'])
-        inputs = return_dict['sample']
-        loss_decode = self.decode_head.loss(inputs, data_samples, self.train_cfg)
+        x = return_dict['sample']
+        loss_decode = self.decode_head.loss(x, data_samples, self.train_cfg)
         losses.update(add_prefix(loss_decode, 'decode'))
         return losses
 
@@ -268,8 +269,8 @@ class VQVAEEncoderDecoder(EncoderDecoder):
             ] * inputs.shape[0]
 
         return_dict = self.backbone(inputs)
-        inputs = return_dict['sample']
-        seg_logits = self.decode_head.predict(inputs, batch_img_metas, self.test_cfg)
+        x = return_dict['sample']
+        seg_logits = self.decode_head.predict(x, batch_img_metas, self.test_cfg)
 
         return self.postprocess_result(seg_logits, data_samples)
 

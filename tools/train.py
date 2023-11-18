@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import sys
 import argparse
 import logging
 import os
@@ -9,6 +10,9 @@ from mmengine.logging import print_log
 from mmengine.runner import Runner
 
 from mmseg.registry import RUNNERS
+from mmseg.utils import register_all_modules
+
+register_all_modules()
 
 
 def parse_args():

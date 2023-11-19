@@ -15,11 +15,11 @@ default_hooks = dict(
     visualization=dict(type='SegVisualizationHook', draw=True, interval=20),
 )
 
-work_dir = './work_dirs/mapgpt/vqvae'
+work_dir = './work_dirs/mapgpt/vqvae-commit'
 
 vis_backends = [
     dict(type='LocalVisBackend', save_dir=work_dir),
-    dict(type='WandbVisBackend', init_kwargs=dict(project='mapgpt', group='vqvae', name='vqvae'))
+    dict(type='WandbVisBackend', init_kwargs=dict(project='mapgpt', group='vqvae', name='vqvae-commit'))
 ]
 visualizer = dict(
     type='SegLocalVisualizer', vis_backends=vis_backends, name='visualizer')
@@ -156,7 +156,7 @@ optim_wrapper = dict(
         type='AdamW', lr=base_lr, betas=(0.9, 0.999), weight_decay=0.01),
 )
 
-max_epochs = 400
+max_epochs = 200
 param_scheduler = [
     dict(
         type='LinearLR', start_factor=1e-6, by_epoch=False, begin=0, end=100),

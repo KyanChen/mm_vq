@@ -1,5 +1,4 @@
 # custom_imports = dict(imports=['mmseg.vq'], allow_failed_imports=False)
-
 default_scope = 'mmseg'
 env_cfg = dict(
     cudnn_benchmark=True,
@@ -15,11 +14,11 @@ default_hooks = dict(
     visualization=dict(type='SegVisualizationHook', draw=True, interval=20),
 )
 
-work_dir = './work_dirs/mapgpt/vqvae-commit'
+work_dir = './work_dirs/mapgpt/vqvae-commit-256'
 
 vis_backends = [
-    dict(type='LocalVisBackend', save_dir=work_dir),
-    dict(type='WandbVisBackend', init_kwargs=dict(project='mapgpt', group='vqvae', name='vqvae-commit'))
+    dict(type='LocalVisBackend'),
+    # dict(type='WandbVisBackend', init_kwargs=dict(project='mapgpt', group='vqvae', name='vqvae-commit'))
 ]
 visualizer = dict(
     type='SegLocalVisualizer', vis_backends=vis_backends, name='visualizer')
@@ -28,7 +27,7 @@ log_level = 'INFO'
 load_from = None
 resume = False
 
-crop_size = (1024, 1024)
+crop_size = (256, 256)
 
 # model settings
 data_preprocessor = dict(
@@ -47,16 +46,17 @@ model = dict(
         ignore_index=255,
         quantizer=dict(
             type='VectorQuantizer',
-            n_e=128,
+            n_e=64,
+            # n_e=128,
             vq_embed_dim=768,
             legacy=False,
             beta=1.,
             with_codebook_reset=True,
             mu=0.99,
         ),
-        down_block_types=("DownEncoderBlock2D", "DownEncoderBlock2D", "DownEncoderBlock2D", "DownEncoderBlock2D"),
-        up_block_types=("UpDecoderBlock2D", "UpDecoderBlock2D", "UpDecoderBlock2D", "UpDecoderBlock2D"),
-        block_out_channels=(32, 64, 128, 256),
+        down_block_types=["DownEncoderBlock2D"]*5,
+        up_block_types=["UpDecoderBlock2D"]*5,
+        block_out_channels=(32, 64, 128, 256, 512),
         layers_per_block=2,
         act_fn="silu",
         latent_channels=256,
@@ -76,7 +76,7 @@ model = dict(
 
 
 dataset_type = 'SemanticVQVAEDataset'
-data_root = r'E:\mapgpt'
+data_root = r'data_samples'
 
 train_pipeline = [
     dict(type='LoadImageFromFile', color_type='unchanged'),

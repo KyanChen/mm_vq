@@ -1,11 +1,16 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import sys
+
+from mmseg.utils import register_all_modules
+
+sys.path.append(sys.path[0]+'/..')
 import argparse
 import os
 import os.path as osp
 
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
-
+register_all_modules()
 
 # TODO: support fuse_conv_bn, visualization, and format_only
 def parse_args():

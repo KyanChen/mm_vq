@@ -144,6 +144,7 @@ class VQVAEModel(BaseModule):
     def __init__(
         self,
         quantizer,
+        with_downsample: bool = False,
         num_classes: int = 7,
         ignore_index: int = 255,
         down_block_types: Tuple[str] = ("DownEncoderBlock2D",),
@@ -163,12 +164,13 @@ class VQVAEModel(BaseModule):
         self.ignore_index = ignore_index
 
         self.embedding = nn.Embedding(num_classes, latent_channels)
-        self.down_conv = nn.Sequential(
-            nn.Conv2d(latent_channels, latent_channels, 5, stride=2, padding=2),
-            nn.SiLU(),
-            nn.Conv2d(latent_channels, latent_channels, 3, padding=1),
-            nn.SiLU(),
-        )
+        if with_downsample:
+            self.down_conv = nn.Sequential(
+                nn.Conv2d(latent_channels, latent_channels, 5, stride=2, padding=2),
+                nn.SiLU(),
+                nn.Conv2d(latent_channels, latent_channels, 3, padding=1),
+                nn.SiLU(),
+            )
 
         self.encoder = Encoder(
             in_channels=latent_channels,
@@ -208,7 +210,8 @@ class VQVAEModel(BaseModule):
         x[ignore_mask] = 0
         # reshape to (batch, channel, height, width)
         x = einops.rearrange(x, 'b h w c -> b c h w')
-        x = self.down_conv(x)
+        if hasattr(self, 'down_conv'):
+            x = self.down_conv(x)
 
         h = self.encoder(x)
         h = self.quant_conv(h)

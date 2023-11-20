@@ -1,9 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import sys
-
-from mmseg.utils import register_all_modules
-
 sys.path.append(sys.path[0]+'/..')
+from mmseg.utils import register_all_modules
 import argparse
 import os
 import os.path as osp

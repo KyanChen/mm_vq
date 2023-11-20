@@ -17,7 +17,7 @@ default_hooks = dict(
 work_dir = './work_dirs/mapgpt/vqvae-commit-256'
 
 vis_backends = [
-    dict(type='LocalVisBackend'),
+    dict(type='LocalVisBackend', save_dir=work_dir+'/vis'),
     # dict(type='WandbVisBackend', init_kwargs=dict(project='mapgpt', group='vqvae', name='vqvae-commit'))
 ]
 visualizer = dict(

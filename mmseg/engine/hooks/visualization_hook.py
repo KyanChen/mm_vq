@@ -81,7 +81,7 @@ class SegVisualizationHook(Hook):
         if self.draw is False or mode == 'train':
             return
 
-        if self.every_n_inner_iters(batch_idx, self.interval):
+        if self.every_n_inner_iters(batch_idx, self.interval) or mode == 'test':
             for output in outputs:
                 img_path = output.img_path
                 img_bytes = fileio.get(

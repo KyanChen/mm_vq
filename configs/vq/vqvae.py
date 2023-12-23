@@ -14,11 +14,11 @@ default_hooks = dict(
     visualization=dict(type='SegVisualizationHook', draw=True, interval=20),
 )
 
-work_dir = './work_dirs/mapgpt/vqvae-commit-256'
+work_dir = './work_dirs/mapgpt/vqvae-commit-256_codenum32'
 
 vis_backends = [
     dict(type='LocalVisBackend', save_dir=work_dir+'/vis'),
-    dict(type='WandbVisBackend', init_kwargs=dict(project='mapgpt', group='vqvae', name='vqvae-commit'))
+    dict(type='WandbVisBackend', init_kwargs=dict(project='mapgpt', group='vqvae', name='vqvae-commit_codenum32'))
 ]
 visualizer = dict(
     type='SegLocalVisualizer', vis_backends=vis_backends, name='visualizer')
@@ -46,8 +46,8 @@ model = dict(
         ignore_index=255,
         quantizer=dict(
             type='VectorQuantizer',
-            # n_e=64,
-            n_e=128,
+            n_e=32,
+            # n_e=128,
             vq_embed_dim=768,
             legacy=False,
             beta=1.,
@@ -95,15 +95,15 @@ train_pipeline = [
 test_pipeline = [
     dict(type='LoadImageFromFile', color_type='unchanged'),
     dict(type='Resize', scale=crop_size, keep_ratio=True, interpolation='nearest'),
+    dict(type='LoadAnnotations'),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform
-    dict(type='LoadAnnotations'),
     dict(type='PackSegInputs')
 ]
 
-batch_size_per_gpu = 4
-num_workers = 0
-persistent_workers = False
+batch_size_per_gpu = 8
+num_workers = 4
+persistent_workers = True
 # indices = list(range(0, 8))
 indices = None
 
@@ -127,7 +127,7 @@ train_dataloader = dict(
 )
 
 val_dataloader = dict(
-    batch_size=batch_size_per_gpu*2,
+    batch_size=batch_size_per_gpu,
     num_workers=num_workers,
     persistent_workers=persistent_workers,
     sampler=dict(type='DefaultSampler', shuffle=False),

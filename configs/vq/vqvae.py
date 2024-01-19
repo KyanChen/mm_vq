@@ -14,11 +14,11 @@ default_hooks = dict(
     visualization=dict(type='SegVisualizationHook', draw=True, interval=20),
 )
 
-work_dir = './work_dirs/mapgpt/vqvae-commit-256_codenum32'
+work_dir = './work_dirs/mapgpt/vqvae-commit-64_codenum10'
 
 vis_backends = [
     dict(type='LocalVisBackend', save_dir=work_dir+'/vis'),
-    dict(type='WandbVisBackend', init_kwargs=dict(project='mapgpt', group='vqvae', name='vqvae-commit_codenum32'))
+    dict(type='WandbVisBackend', init_kwargs=dict(project='mapgpt', group='vqvae', name='vqvae-commit_codenum10'))
 ]
 visualizer = dict(
     type='SegLocalVisualizer', vis_backends=vis_backends, name='visualizer')
@@ -27,7 +27,7 @@ log_level = 'INFO'
 load_from = None
 resume = False
 
-crop_size = (256, 256)
+crop_size = (64, 64)
 
 # model settings
 data_preprocessor = dict(
@@ -46,7 +46,7 @@ model = dict(
         ignore_index=255,
         quantizer=dict(
             type='VectorQuantizer',
-            n_e=32,
+            n_e=10,
             # n_e=128,
             vq_embed_dim=768,
             legacy=False,
@@ -54,9 +54,12 @@ model = dict(
             with_codebook_reset=True,
             mu=0.99,
         ),
-        down_block_types=["DownEncoderBlock2D"]*6,
-        up_block_types=["UpDecoderBlock2D"]*6,
-        block_out_channels=(32, 64, 128, 256, 512, 512),
+        # down_block_types=["DownEncoderBlock2D"]*6,
+        # up_block_types=["UpDecoderBlock2D"]*6,
+        # block_out_channels=(32, 64, 128, 256, 512, 512),
+        down_block_types=["DownEncoderBlock2D"]*4,
+        up_block_types=["UpDecoderBlock2D"]*4,
+        block_out_channels=(32, 64, 128, 256),
         layers_per_block=2,
         act_fn="silu",
         latent_channels=256,
@@ -172,7 +175,7 @@ param_scheduler = [
 
 
 train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=2)
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=20)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 

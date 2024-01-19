@@ -56,7 +56,7 @@ model = dict(
         ),
         down_block_types=["DownEncoderBlock2D"]*5,
         up_block_types=["UpDecoderBlock2D"]*5,
-        block_out_channels=(32, 64, 128, 256, 512, 512),
+        block_out_channels=(32, 64, 128, 256, 512),
         layers_per_block=2,
         act_fn="silu",
         latent_channels=256,
